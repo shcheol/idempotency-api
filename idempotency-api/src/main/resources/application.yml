@@ -1,0 +1,7 @@
+spring:
+  application:
+    name: idempotency-api
+
+logging:
+  level:
+    com.hcs.idempotencyapi: debug
