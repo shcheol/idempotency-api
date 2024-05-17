@@ -5,7 +5,7 @@ import org.springframework.http.HttpStatus;
 public enum IdempotentError {
 
 	BAD_REQUEST(HttpStatus.BAD_REQUEST, "멱등키가 누락되었습니다."),
-	CONFLICT(HttpStatus.CONFLICT, "이전 요청 처리가 진행중입니다."),
+	CONFLICT(HttpStatus.CONFLICT, "이전 요청 처리가 진행중입니다. 잠시후 다시 요청해주세요."),
 	UNPROCESSABLE_ENTITY(HttpStatus.UNPROCESSABLE_ENTITY, "요청 본문이 처음 요청과 다릅니다.")
 	;
 

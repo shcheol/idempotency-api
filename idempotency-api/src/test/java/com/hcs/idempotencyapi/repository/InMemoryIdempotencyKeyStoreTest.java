@@ -28,10 +28,13 @@ class InMemoryIdempotencyKeyStoreTest {
 	void set() {
 		String key = "2";
 		String prefix = "";
+		String value = "val";
+		Object get = keyStore.get(prefix,key);
+		assertThat(get).isNull();
 
-		Object o = keyStore.get(prefix,key);
-		keyStore.set(prefix,key, "");
-
+		keyStore.set(prefix,key, value);
+		Object getAfterSet = keyStore.get(prefix, key);
+		assertThat(getAfterSet).isEqualTo(value);
 	}
 
 	@Test

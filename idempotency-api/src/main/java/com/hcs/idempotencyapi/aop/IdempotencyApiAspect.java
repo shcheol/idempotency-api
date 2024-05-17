@@ -65,9 +65,7 @@ public class IdempotencyApiAspect {
 		}
 		return proceed;
 	}
-
-	public String getBody(HttpServletRequest request) throws IOException {
-
+	private String getBody(HttpServletRequest request) throws IOException {
 		return StreamUtils.copyToString(request.getInputStream(), StandardCharsets.UTF_8);
 	}
 }
