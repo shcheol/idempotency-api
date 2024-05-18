@@ -16,28 +16,35 @@ import org.springframework.web.context.request.ServletRequestAttributes;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.util.Map;
 
 @Slf4j
 @Aspect
 @Component
 public class IdempotencyApiAspect {
-	private final IdempotencyKeyStore idempotencyKeyStore;
+	private final Map<String, IdempotencyKeyStore> idempotencyKeyStoreMap;
 
-	public IdempotencyApiAspect(IdempotencyKeyStore idempotencyKeyStore) {
-		this.idempotencyKeyStore = idempotencyKeyStore;
+	public IdempotencyApiAspect(Map<String, IdempotencyKeyStore> idempotencyKeyStoreMap) {
+		this.idempotencyKeyStoreMap = idempotencyKeyStoreMap;
 	}
 
 	@Around("@annotation(idempotencyApi)")
 	public Object join(ProceedingJoinPoint joinPoint, IdempotencyApi idempotencyApi) throws Throwable {
 
+		IdempotencyKeyStore idempotencyKeyStore = idempotencyKeyStoreMap.get(idempotencyApi.storeType());
+		if (idempotencyKeyStore == null){
+			log.warn("invalid repository type, use default in-memory repository");
+			idempotencyKeyStore = idempotencyKeyStoreMap.get("inMemoryIdempotencyKeyStore");
+		}
+
 		HttpServletRequest request = ((ServletRequestAttributes) RequestContextHolder.currentRequestAttributes()).getRequest();
 		String idempotencyKey = request.getHeader(idempotencyApi.headerKey());
 		String body = getBody(request);
 
-		String name = joinPoint.getSignature().getName();
+		String methodName = joinPoint.getSignature().getName();
 
-		String REQUEST_PREFIX = "REQUEST_"+name;
-		String RESPONSE_PREFIX = "RESPONSE_"+name;
+		String REQUEST_PREFIX = "REQUEST_"+methodName;
+		String RESPONSE_PREFIX = "RESPONSE_"+methodName;
 
 		if (!idempotencyKeyStore.has(REQUEST_PREFIX,idempotencyKey)){
 			idempotencyKeyStore.set(REQUEST_PREFIX, idempotencyKey, body);

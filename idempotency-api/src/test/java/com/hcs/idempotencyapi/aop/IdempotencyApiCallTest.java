@@ -16,7 +16,7 @@ import static com.hcs.idempotencyapi.aop.ApiCallCases.헤더에멱등키없는�
 import static org.assertj.core.api.Assertions.assertThat;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-class IdempotencyApiAspectTest {
+class IdempotencyApiCallTest {
 
 	@LocalServerPort
 	private int port;

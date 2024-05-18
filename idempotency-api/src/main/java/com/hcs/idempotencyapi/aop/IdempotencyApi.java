@@ -12,4 +12,6 @@ public @interface IdempotencyApi {
 	String headerKey() default "idempotent";
 
 	boolean keyRequired() default false;
+
+	String storeType() default "inMemoryIdempotencyKeyStore";
 }
