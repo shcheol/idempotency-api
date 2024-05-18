@@ -8,4 +8,5 @@ before_install:
   - mvn -v
 
 install:
+  - chmod +x ./gradlew
   - ./gradlew build --stacktrace publishToMavenLocal
