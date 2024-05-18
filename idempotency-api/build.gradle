@@ -24,6 +24,15 @@ dependencyManagement {
     }
 }
 
+publishing {
+    publications {
+        mavenJava(MavenPublication){
+            // jar is the default build task configured by Spring Boot if bootJar=false
+            artifact jar
+        }
+    }
+}
+
 dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-aop'
     implementation 'org.springframework.boot:spring-boot-starter-web'
