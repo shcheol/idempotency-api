@@ -27,6 +27,12 @@ public class TestCodeController {
 		return ResponseEntity.ok(testClass);
 	}
 
+	@IdempotencyApi(keyRequired = true)
+	@PostMapping("/required/ex")
+	public ResponseEntity<TestCodeClass> keyRequiredThrow(@RequestBody TestCodeClass testClass) {
+		throw new RuntimeException();
+	}
+
 	@IdempotencyApi(keyRequired = false)
 	@PostMapping("/no-required")
 	public ResponseEntity<TestCodeClass> noKeyRequired(@RequestBody TestCodeClass testClass) {

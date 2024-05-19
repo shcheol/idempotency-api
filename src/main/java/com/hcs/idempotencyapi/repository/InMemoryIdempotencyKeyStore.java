@@ -13,17 +13,22 @@ public class InMemoryIdempotencyKeyStore implements IdempotencyKeyStore {
 	private final Map<String, Object> keyStore = new ConcurrentHashMap<>();
 
 	@Override
-	public boolean has(String prefix, String key) {
-		return keyStore.containsKey(prefix + key);
+	public boolean has(String key) {
+		return keyStore.containsKey(key);
 	}
 
 	@Override
-	public void set(String prefix, String key, Object value) {
-		keyStore.putIfAbsent(prefix + key, value);
+	public void set(String key, Object value) {
+		keyStore.putIfAbsent(key, value);
 	}
 
 	@Override
-	public Object get(String prefix, String key) {
-		return keyStore.get(prefix + key);
+	public Object get(String key) {
+		return keyStore.get(key);
+	}
+
+	@Override
+	public void remove(String key) {
+		keyStore.remove(key);
 	}
 }
