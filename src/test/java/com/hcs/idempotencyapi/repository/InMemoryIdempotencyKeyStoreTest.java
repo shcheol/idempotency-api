@@ -25,7 +25,7 @@ class InMemoryIdempotencyKeyStoreTest {
     }
 
     @Test
-    void set() {
+    void getSet() {
         String key = "2";
         String prefix = "";
         String value = "val";
@@ -37,7 +37,4 @@ class InMemoryIdempotencyKeyStoreTest {
         assertThat(getAfterSet).isEqualTo(value);
     }
 
-    @Test
-    void get() {
-    }
 }

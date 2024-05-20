@@ -1,4 +1,4 @@
 package com.hcs.idempotencyapi.aop.code;
 
-record TestCodeClass(String value) {
+public record TestCodeClass(String value) {
 }

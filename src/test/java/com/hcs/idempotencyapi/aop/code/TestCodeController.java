@@ -1,7 +1,9 @@
 package com.hcs.idempotencyapi.aop.code;
 
 import com.hcs.idempotencyapi.aop.IdempotencyApi;
+import com.hcs.idempotencyapi.ex.IdempotentException;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
@@ -38,5 +40,10 @@ public class TestCodeController {
 	public ResponseEntity<TestCodeClass> noKeyRequired(@RequestBody TestCodeClass testClass) {
 
 		return ResponseEntity.ok(testClass);
+	}
+
+	@ExceptionHandler(value = IdempotentException.class)
+	public ResponseEntity<String> errorHandler(IdempotentException idempotentException){
+		return ResponseEntity.status(idempotentException.getError().status()).body(idempotentException.getMessage());
 	}
 }
