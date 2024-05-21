@@ -13,10 +13,7 @@ import org.aspectj.lang.reflect.MethodSignature;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StreamUtils;
 import org.springframework.util.StringUtils;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 
@@ -100,7 +97,7 @@ public class IdempotencyApiAspect {
 
 		return Arrays.stream(annotations)
 				.anyMatch(a -> {
-					if (a instanceof PostMapping || a instanceof PutMapping) return true;
+					if (a instanceof PostMapping || a instanceof PatchMapping) return true;
 					if (a instanceof RequestMapping) {
 						RequestMethod[] method = ((RequestMapping) a).method();
 						return Arrays.stream(method).anyMatch(rm -> rm.equals(RequestMethod.POST) || rm.equals(RequestMethod.PUT));
