@@ -11,35 +11,40 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 public class TestCodeController {
 
+	private final TestService testService;
+
+	public TestCodeController(TestService testService) {
+		this.testService = testService;
+	}
+
 	@IdempotencyApi(keyRequired = true)
 	@PostMapping("/required")
 	public ResponseEntity<TestCodeClass> keyRequired(@RequestBody TestCodeClass testClass) {
-
-		return ResponseEntity.ok(testClass);
+		System.out.println(testClass.value());
+		String test = testService.test(testClass.value());
+		System.out.println("test = " + test);
+		return ResponseEntity.ok(new TestCodeClass(test));
 	}
 
 	@IdempotencyApi(keyRequired = true)
 	@PostMapping("/required/delay")
 	public ResponseEntity<TestCodeClass> keyRequiredDelay(@RequestBody TestCodeClass testClass) {
-		try {
-			Thread.sleep(4000);
-		} catch (InterruptedException e) {
-			throw new RuntimeException(e);
-		}
-		return ResponseEntity.ok(testClass);
+		String test = testService.delay(testClass.value());
+		return ResponseEntity.ok(new TestCodeClass(test));
 	}
 
 	@IdempotencyApi(keyRequired = true)
 	@PostMapping("/required/ex")
 	public ResponseEntity<TestCodeClass> keyRequiredThrow(@RequestBody TestCodeClass testClass) {
-		throw new RuntimeException();
+		String ex = testService.ex(testClass.value());
+		return ResponseEntity.ok(new TestCodeClass(ex));
 	}
 
 	@IdempotencyApi(keyRequired = false)
 	@PostMapping("/no-required")
 	public ResponseEntity<TestCodeClass> noKeyRequired(@RequestBody TestCodeClass testClass) {
-
-		return ResponseEntity.ok(testClass);
+		String test = testService.test(testClass.value());
+		return ResponseEntity.ok(new TestCodeClass(test));
 	}
 
 	@ExceptionHandler(value = IdempotentException.class)

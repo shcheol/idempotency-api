@@ -54,9 +54,11 @@ public class IdempotencyApiAspect {
 		if (!hasValidKey(idempotencyApi, idempotencyKey)) {
 			return joinPoint.proceed();
 		}
+		idempotencyKey = generateKey(request, idempotencyKey);
 
 		String body = getBody(request);
 		if (isSameRequest(storeType, idempotencyKey, body)) {
+			System.out.println("isSameRequest() = " + body);
 			return responseStore.get(storeType, idempotencyKey);
 		}
 
@@ -69,6 +71,10 @@ public class IdempotencyApiAspect {
 			requestStore.remove(storeType, idempotencyKey);
 			throw e;
 		}
+	}
+
+	private String generateKey(HttpServletRequest request, String idempotencyKey) {
+		return request.getRequestURI()+request.getMethod()+idempotencyKey;
 	}
 
 	private boolean hasValidKey(IdempotencyApi idempotencyApi, String idempotencyKey) {

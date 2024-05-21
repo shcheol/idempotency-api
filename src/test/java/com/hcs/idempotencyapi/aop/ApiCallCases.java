@@ -25,12 +25,12 @@ public class ApiCallCases {
 				.log().all().extract();
 	}
 
-	static ExtractableResponse<Response> 멱등키요청(String path) {
+	static ExtractableResponse<Response> 멱등키요청(String path, String key) {
 
 		return RestAssured
 				.given().log().all()
 				.contentType(MediaType.APPLICATION_JSON_VALUE)
-				.header("idempotent","key")
+				.header("idempotent",key)
 				.body("""
 							{
 							"value":"testValue"
@@ -42,12 +42,12 @@ public class ApiCallCases {
 				.log().all().extract();
 	}
 
-	static ExtractableResponse<Response> 멱등키요청_동일키_다른본문 (String path) {
+	static ExtractableResponse<Response> 멱등키요청_동일키_다른본문 (String path, String key) {
 
 		return RestAssured
 				.given().log().all()
 				.contentType(MediaType.APPLICATION_JSON_VALUE)
-				.header("idempotent","key")
+				.header("idempotent",key)
 				.body("""
 							{
 							"value":"otherValue"
