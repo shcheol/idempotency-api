@@ -11,10 +11,7 @@ import org.aspectj.lang.reflect.MethodSignature;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StreamUtils;
 import org.springframework.util.StringUtils;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 
@@ -91,8 +88,8 @@ public class IdempotencyApiAspect {
     private String getIdempotencyKey(HttpServletRequest request, IdempotencyApi idempotencyApi) {
         return request.getHeader(idempotencyApi.headerKey());
     }
-
     private String getBody(HttpServletRequest request) throws IOException {
         return StreamUtils.copyToString(request.getInputStream(), StandardCharsets.UTF_8);
     }
+
 }

@@ -47,7 +47,7 @@ class IdempotencyApiCallTest {
 			RestAssured.port = port;
 		}
 		when(testService.test("testValue")).thenReturn("testValue");
-//		when(testService.test(any())).thenReturn("otherValue");
+		when(testService.delay("testValue")).thenCallRealMethod();
 	}
 
 	@Test
