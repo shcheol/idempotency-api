@@ -13,5 +13,6 @@ public @interface IdempotencyApi {
 
 	boolean keyRequired() default false;
 
+	String keyPatternRegex() default "";
 	String storeType() default "inMemoryIdempotencyKeyStore";
 }

@@ -19,25 +19,31 @@ public class RedisIdempotentKeyStore implements IdempotencyKeyStore {
     }
 
     @Override
-    public boolean has(String prefix, String key) {
-        String s = redisStore.get(prefix + key);
+    public boolean has(String key) {
 
-        return StringUtils.hasText(s);
+        return StringUtils.hasText(redisStore.get(key));
     }
 
     @Override
-    public void set(String prefix, String key, Object value) {
+    public void set(String key, Object value) {
         ObjectMapper om = new ObjectMapper();
         try {
             String s = om.writeValueAsString(value);
-            redisStore.setIfAbsent(prefix+key, s, 300, TimeUnit.SECONDS);
+            redisStore.setIfAbsent(key, s, 300, TimeUnit.SECONDS);
         } catch (JsonProcessingException e) {
             throw new RuntimeException();
         }
     }
 
     @Override
-    public Object get(String prefix, String key) {
-        return redisStore.getAndDelete(prefix+key);
+    public Object get(String key) {
+        return redisStore.getAndDelete(key);
     }
+
+    @Override
+    public void remove(String key) {
+        redisStore.getAndDelete(key);
+    }
+
+
 }

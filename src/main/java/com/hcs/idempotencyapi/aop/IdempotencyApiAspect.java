@@ -2,77 +2,97 @@ package com.hcs.idempotencyapi.aop;
 
 import com.hcs.idempotencyapi.ex.IdempotentError;
 import com.hcs.idempotencyapi.ex.IdempotentException;
-import com.hcs.idempotencyapi.repository.IdempotencyKeyStore;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
+import org.aspectj.lang.reflect.MethodSignature;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StreamUtils;
 import org.springframework.util.StringUtils;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 
 import java.io.IOException;
+import java.lang.annotation.Annotation;
 import java.nio.charset.StandardCharsets;
-import java.util.Map;
+import java.util.Arrays;
+import java.util.Optional;
 
 @Slf4j
 @Aspect
 @Component
 public class IdempotencyApiAspect {
-	private final Map<String, IdempotencyKeyStore> idempotencyKeyStoreMap;
 
-	public IdempotencyApiAspect(Map<String, IdempotencyKeyStore> idempotencyKeyStoreMap) {
-		this.idempotencyKeyStoreMap = idempotencyKeyStoreMap;
-	}
+    private final IdempotencyApiStrategy strategy;
 
-	@Around("@annotation(idempotencyApi)")
-	public Object join(ProceedingJoinPoint joinPoint, IdempotencyApi idempotencyApi) throws Throwable {
+    public IdempotencyApiAspect(IdempotencyApiStrategy strategy) {
+        this.strategy = strategy;
+    }
 
-		IdempotencyKeyStore idempotencyKeyStore = idempotencyKeyStoreMap.get(idempotencyApi.storeType());
-		if (idempotencyKeyStore == null){
-			log.warn("invalid repository type, use default in-memory repository");
-			idempotencyKeyStore = idempotencyKeyStoreMap.get("inMemoryIdempotencyKeyStore");
-		}
+    @Around("@annotation(idempotencyApi)")
+    public Object join(ProceedingJoinPoint joinPoint, IdempotencyApi idempotencyApi) throws Throwable {
 
-		HttpServletRequest request = ((ServletRequestAttributes) RequestContextHolder.currentRequestAttributes()).getRequest();
-		String idempotencyKey = request.getHeader(idempotencyApi.headerKey());
-		String body = getBody(request);
+        if (!validAnnotationLocation(joinPoint)) {
+            log.warn("invalid location, idempotencyApi Annotation does not work");
+            return joinPoint.proceed();
+        }
 
-		String methodName = joinPoint.getSignature().getName();
+        String storeType = idempotencyApi.storeType();
 
-		String REQUEST_PREFIX = "REQUEST_"+methodName;
-		String RESPONSE_PREFIX = "RESPONSE_"+methodName;
+        HttpServletRequest request = ((ServletRequestAttributes) RequestContextHolder.currentRequestAttributes()).getRequest();
 
-		if (!idempotencyKeyStore.has(REQUEST_PREFIX,idempotencyKey)){
-			idempotencyKeyStore.set(REQUEST_PREFIX, idempotencyKey, body);
-		} else {
-			Object o = idempotencyKeyStore.get(REQUEST_PREFIX, idempotencyKey);
-			if (!o.equals(body)){
-				throw new IdempotentException(IdempotentError.UNPROCESSABLE_ENTITY);
-			}
-			if (!idempotencyKeyStore.has(RESPONSE_PREFIX, idempotencyKey)){
-				throw new IdempotentException(IdempotentError.CONFLICT);
-			}
-		}
+        String idempotencyKey = getIdempotencyKey(request, idempotencyApi);
+        if (!StringUtils.hasText(idempotencyKey)) {
+            if (idempotencyApi.keyRequired()) {
+                throw new IdempotentException(IdempotentError.BAD_REQUEST);
+            }
+            return joinPoint.proceed();
+        }
+        strategy.isValidKey(idempotencyKey, idempotencyApi.keyPatternRegex());
 
-		if (idempotencyApi.keyRequired() && !StringUtils.hasText(idempotencyKey)) {
-			throw new IdempotentException(IdempotentError.BAD_REQUEST);
-		}
+        String body = getBody(request);
 
-		if (StringUtils.hasText(idempotencyKey) && idempotencyKeyStore.has(RESPONSE_PREFIX, idempotencyKey)) {
-			return idempotencyKeyStore.get(RESPONSE_PREFIX, idempotencyKey);
-		}
+        Optional<Object> duplicatedRequest = strategy.getResponseDataIfDuplicateRequest(storeType, idempotencyKey, body);
+        return duplicatedRequest.orElseGet(
+                () -> {
+                    try {
+                        strategy.preProceed(storeType, idempotencyKey, body);
+                        Object proceed = joinPoint.proceed();
+                        strategy.postProceed(storeType, idempotencyKey, proceed);
+                        return proceed;
+                    } catch (Throwable e) {
+                        strategy.exProceed(storeType, idempotencyKey);
+                        throw new RuntimeException(e);
+                    }
+                }
+        );
+    }
 
-		Object proceed = joinPoint.proceed();
-		if (StringUtils.hasText(idempotencyKey)) {
-			idempotencyKeyStore.set(RESPONSE_PREFIX, idempotencyKey, proceed);
-		}
-		return proceed;
-	}
-	private String getBody(HttpServletRequest request) throws IOException {
-		return StreamUtils.copyToString(request.getInputStream(), StandardCharsets.UTF_8);
-	}
+    private boolean validAnnotationLocation(ProceedingJoinPoint joinPoint) {
+        MethodSignature signature = (MethodSignature) joinPoint.getSignature();
+        Annotation[] annotations = signature.getMethod().getAnnotations();
+
+        return Arrays.stream(annotations).anyMatch(a -> {
+            if (a instanceof PostMapping || a instanceof PutMapping) return true;
+            if (a instanceof RequestMapping) {
+                RequestMethod[] method = ((RequestMapping) a).method();
+                return Arrays.stream(method).anyMatch(rm -> rm.equals(RequestMethod.POST) || rm.equals(RequestMethod.PUT));
+            }
+            return false;
+        });
+    }
+
+    private String getIdempotencyKey(HttpServletRequest request, IdempotencyApi idempotencyApi) {
+        return request.getHeader(idempotencyApi.headerKey());
+    }
+
+    private String getBody(HttpServletRequest request) throws IOException {
+        return StreamUtils.copyToString(request.getInputStream(), StandardCharsets.UTF_8);
+    }
 }
