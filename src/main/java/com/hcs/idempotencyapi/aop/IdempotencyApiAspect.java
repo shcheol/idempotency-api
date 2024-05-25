@@ -2,10 +2,6 @@ package com.hcs.idempotencyapi.aop;
 
 import com.hcs.idempotencyapi.ex.IdempotentError;
 import com.hcs.idempotencyapi.ex.IdempotentException;
-import com.hcs.idempotencyapi.repository.IdempotencyKeyStore;
-import com.hcs.idempotencyapi.repository.IdempotencyKeyStoreFactory;
-import com.hcs.idempotencyapi.repository.mapper.RequestStoreMapper;
-import com.hcs.idempotencyapi.repository.mapper.ResponseStoreMapper;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.aspectj.lang.ProceedingJoinPoint;
@@ -26,19 +22,17 @@ import java.io.IOException;
 import java.lang.annotation.Annotation;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
+import java.util.Optional;
 
 @Slf4j
 @Aspect
 @Component
 public class IdempotencyApiAspect {
 
-    private final RequestStoreMapper requestStore;
+    private final IdempotencyApiStrategy strategy;
 
-    private final ResponseStoreMapper responseStore;
-
-    public IdempotencyApiAspect(RequestStoreMapper requestStore, ResponseStoreMapper responseStore) {
-        this.requestStore = requestStore;
-        this.responseStore = responseStore;
+    public IdempotencyApiAspect(IdempotencyApiStrategy strategy) {
+        this.strategy = strategy;
     }
 
     @Around("@annotation(idempotencyApi)")
@@ -52,6 +46,7 @@ public class IdempotencyApiAspect {
         String storeType = idempotencyApi.storeType();
 
         HttpServletRequest request = ((ServletRequestAttributes) RequestContextHolder.currentRequestAttributes()).getRequest();
+
         String idempotencyKey = getIdempotencyKey(request, idempotencyApi);
         if (!StringUtils.hasText(idempotencyKey)) {
             if (idempotencyApi.keyRequired()) {
@@ -59,27 +54,24 @@ public class IdempotencyApiAspect {
             }
             return joinPoint.proceed();
         }
+        strategy.isValidKey(idempotencyKey, idempotencyApi.keyPatternRegex());
 
         String body = getBody(request);
-        if (requestStore.has(storeType,idempotencyKey)) {
-            if (!body.equals(requestStore.get(storeType, idempotencyKey))) {
-                throw new IdempotentException(IdempotentError.UNPROCESSABLE_ENTITY);
-            }
-            if (!responseStore.has(storeType, idempotencyKey)) {
-                throw new IdempotentException(IdempotentError.CONFLICT);
-            }
-            return responseStore.get(storeType, idempotencyKey);
-        }
-        requestStore.set(storeType, idempotencyKey, body);
 
-        try {
-            Object proceed = joinPoint.proceed();
-            responseStore.set(storeType, idempotencyKey, proceed);
-            return proceed;
-        } catch (Exception e) {
-            requestStore.remove(storeType, idempotencyKey);
-            throw e;
-        }
+        Optional<Object> duplicatedRequest = strategy.getResponseDataIfDuplicateRequest(storeType, idempotencyKey, body);
+        return duplicatedRequest.orElseGet(
+                () -> {
+                    try {
+                        strategy.preProceed(storeType, idempotencyKey, body);
+                        Object proceed = joinPoint.proceed();
+                        strategy.postProceed(storeType, idempotencyKey, proceed);
+                        return proceed;
+                    } catch (Throwable e) {
+                        strategy.exProceed(storeType, idempotencyKey);
+                        throw new RuntimeException(e);
+                    }
+                }
+        );
     }
 
     private boolean validAnnotationLocation(ProceedingJoinPoint joinPoint) {

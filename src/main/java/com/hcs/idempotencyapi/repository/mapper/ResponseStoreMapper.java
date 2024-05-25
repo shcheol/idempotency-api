@@ -8,7 +8,7 @@ public class ResponseStoreMapper {
 
     private final IdempotencyKeyStoreFactory idempotencyKeyStoreFactory;
 
-    private final String RESPONSE_PREFIX = "REQUEST_";
+    private final String RESPONSE_PREFIX = "RESPONSE_";
 
     public ResponseStoreMapper(IdempotencyKeyStoreFactory idempotencyKeyStoreFactory) {
         this.idempotencyKeyStoreFactory = idempotencyKeyStoreFactory;
@@ -22,10 +22,7 @@ public class ResponseStoreMapper {
     }
 
     public Object get(String storeType, String key) {
-
-        Object o = idempotencyKeyStoreFactory.get(storeType).get(RESPONSE_PREFIX + key);
-        System.out.println(o.toString());
-        return o;
+        return idempotencyKeyStoreFactory.get(storeType).get(RESPONSE_PREFIX + key);
     }
 
     public void remove(String storeType, String key) {

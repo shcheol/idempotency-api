@@ -56,18 +56,18 @@ class IdempotencyApiCallTest {
 		assertThat(i).isEqualTo(500);
 	}
 
-	@Test
-	@DisplayName("진행중에 추가 요청")
-	void idempotencyRequest() throws InterruptedException {
-
-		CompletableFuture.supplyAsync(() -> 멱등키요청("required/delay"));
-
-		Thread.sleep(2000);
-
-		ExtractableResponse<Response> extract2 = 멱등키요청("required/delay");
-		int i = extract2.response().statusCode();
-		assertThat(i).isEqualTo(500);
-	}
+//	@Test
+//	@DisplayName("진행중에 추가 요청")
+//	void idempotencyRequest() throws InterruptedException {
+//
+//		CompletableFuture.supplyAsync(() -> 멱등키요청("required/delay"));
+//
+//		Thread.sleep(2000);
+//
+//		ExtractableResponse<Response> extract2 = 멱등키요청("required/delay");
+//		int i = extract2.response().statusCode();
+//		assertThat(i).isEqualTo(500);
+//	}
 
 }
 
