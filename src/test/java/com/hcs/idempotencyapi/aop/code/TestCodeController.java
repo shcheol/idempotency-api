@@ -20,9 +20,7 @@ public class TestCodeController {
 	@IdempotencyApi(keyRequired = true)
 	@PostMapping("/required")
 	public ResponseEntity<TestCodeClass> keyRequired(@RequestBody TestCodeClass testClass) {
-		System.out.println(testClass.value());
 		String test = testService.test(testClass.value());
-		System.out.println("test = " + test);
 		return ResponseEntity.ok(new TestCodeClass(test));
 	}
 

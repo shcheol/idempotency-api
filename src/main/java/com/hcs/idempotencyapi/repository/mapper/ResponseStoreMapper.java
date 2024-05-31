@@ -18,14 +18,14 @@ public class ResponseStoreMapper {
     }
 
     public void set(String storeType, String key, Object value) {
-        idempotencyKeyStoreFactory.get(storeType).set(RESPONSE_PREFIX + key, value);
-    }
+		idempotencyKeyStoreFactory.get(storeType).set(RESPONSE_PREFIX + key, value);
+	}
 
     public Object get(String storeType, String key) {
-        return idempotencyKeyStoreFactory.get(storeType).get(RESPONSE_PREFIX + key);
-    }
+		return idempotencyKeyStoreFactory.get(storeType).get(RESPONSE_PREFIX + key);
+	}
 
-    public void remove(String storeType, String key) {
-        idempotencyKeyStoreFactory.get(storeType).remove(RESPONSE_PREFIX + key);
+    public Object remove(String storeType, String key) {
+        return idempotencyKeyStoreFactory.get(storeType).remove(RESPONSE_PREFIX + key);
     }
 }

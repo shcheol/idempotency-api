@@ -1,6 +1,7 @@
 package com.hcs.idempotencyapi.repository;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.ValueOperations;
@@ -12,38 +13,50 @@ import java.util.concurrent.TimeUnit;
 @Component
 public class RedisIdempotentKeyStore implements IdempotencyKeyStore {
 
-    private final ValueOperations<String, String> redisStore;
+	private final ValueOperations<String, String> redisStore;
+	private final ObjectMapper om;
 
-    public RedisIdempotentKeyStore(RedisTemplate<String, String> redisTemplate) {
-        this.redisStore = redisTemplate.opsForValue();
-    }
+	public RedisIdempotentKeyStore(RedisTemplate<String, String> redisTemplate, ObjectMapper om) {
+		this.redisStore = redisTemplate.opsForValue();
+		this.om = om;
+	}
 
-    @Override
-    public boolean has(String key) {
+	@Override
+	public boolean has(String key) {
+		return StringUtils.hasText(redisStore.get(key));
+	}
 
-        return StringUtils.hasText(redisStore.get(key));
-    }
+	@Override
+	public void set(String key, Object value) {
+		redisStore.setIfAbsent(key, writeValueAsString(value), 300, TimeUnit.SECONDS);
+	}
 
-    @Override
-    public void set(String key, Object value) {
-        ObjectMapper om = new ObjectMapper();
-        try {
-            String s = om.writeValueAsString(value);
-            redisStore.setIfAbsent(key, s, 300, TimeUnit.SECONDS);
-        } catch (JsonProcessingException e) {
-            throw new RuntimeException();
-        }
-    }
+	@Override
+	public Object get(String key) {
+		return readValue(redisStore.get(key));
+	}
 
-    @Override
-    public Object get(String key) {
-        return redisStore.getAndDelete(key);
-    }
+	@Override
+	public Object remove(String key) {
+		return readValue(redisStore.getAndDelete(key));
+	}
 
-    @Override
-    public void remove(String key) {
-        redisStore.getAndDelete(key);
-    }
+	private Object readValue(String value) {
+		try {
+			return om.readValue(value, new TypeReference<Object>() {
+			});
+		} catch (JsonProcessingException e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	private String writeValueAsString(Object value) {
+		try {
+			return om.writeValueAsString(value);
+		} catch (JsonProcessingException e) {
+			throw new RuntimeException(e);
+		}
+	}
 
 
 }

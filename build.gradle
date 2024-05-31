@@ -8,7 +8,7 @@ plugins {
 }
 
 group = 'com.hcs'
-version = '1.0.1'
+version = '1.0.2'
 
 java {
     sourceCompatibility = '17'
@@ -29,7 +29,7 @@ publishing {
         mavenJava(MavenPublication){
             groupId = 'com.hcs.idempotencyapi'
             artifactId = 'idempotency-api'
-            version = '1.0.0'
+            version = '1.0.2'
 
             from components.java
         }

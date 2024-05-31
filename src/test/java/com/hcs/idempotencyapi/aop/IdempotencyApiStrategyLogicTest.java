@@ -29,7 +29,6 @@ class IdempotencyApiStrategyLogicTest {
     @Test
     void keyPatternMatch() {
         String key = UUID.randomUUID().toString();
-        System.out.println(key);
         String regex = "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$";
 
         strategyLogic.isValidKey(key, regex);
@@ -55,7 +54,9 @@ class IdempotencyApiStrategyLogicTest {
     void getResponseDataIfDuplicateRequest() {
 
         String key = "getResponseDataIfDuplicateRequest";
-        String body = "request body";
+        String body = """
+        {"request":"body"}
+        """;
         Optional<Object> test1 = strategyLogic.getResponseDataIfDuplicateRequest(storeType, key, body);
         assertThat(test1).isEmpty();
 
@@ -65,7 +66,9 @@ class IdempotencyApiStrategyLogicTest {
         Object result = "result";
         strategyLogic.postProceed(storeType, key, result);
 
-        String differentBody = "differentBody";
+        String differentBody = """
+        {"request":"differentBody"}
+        """;
         assertThrows(IdempotentException.class, () -> strategyLogic.getResponseDataIfDuplicateRequest(storeType, key, differentBody));
         Optional<Object> responseDataIfDuplicateRequest = strategyLogic.getResponseDataIfDuplicateRequest(storeType, key, body);
         assertThat(responseDataIfDuplicateRequest.get()).isEqualTo(result);

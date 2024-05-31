@@ -28,7 +28,7 @@ public class InMemoryIdempotencyKeyStore implements IdempotencyKeyStore {
 	}
 
 	@Override
-	public void remove(String key) {
-		keyStore.remove(key);
+	public Object remove(String key) {
+		return keyStore.remove(key);
 	}
 }

@@ -9,9 +9,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.mockito.verification.VerificationMode;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.boot.test.web.server.LocalServerPort;
@@ -21,13 +19,10 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
-import java.util.stream.Collectors;
 
 import static com.hcs.idempotencyapi.aop.ApiCallCases.*;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.byLessThan;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
@@ -80,7 +75,6 @@ class IdempotencyApiCallTest {
 
 		assertThat(extract.response().statusCode()).isEqualTo(extract2.response().statusCode());
 		assertThat(extract.response().body().asString()).isEqualTo(extract2.response().body().asString());
-		System.out.println("+++++++++++");
 		verify(testService, times(1)).test("testValue");
 	}
 
@@ -107,6 +101,11 @@ class IdempotencyApiCallTest {
 		int requestTimes=10;
 		for(int i=0; i< requestTimes;i++){
 			list.add(CompletableFuture.supplyAsync(() -> 멱등키요청("required/delay", key)));
+			try {
+				Thread.sleep(10);
+			} catch (InterruptedException e) {
+				throw new RuntimeException(e);
+			}
 		}
 
 		List<ExtractableResponse<Response>> collect = list.stream()
