@@ -30,9 +30,11 @@ import java.util.Optional;
 public class IdempotencyApiAspect {
 
     private final IdempotencyApiStrategy strategy;
+    private final IdempotencyRequestProvider provider;
 
-    public IdempotencyApiAspect(IdempotencyApiStrategy strategy) {
+    public IdempotencyApiAspect(IdempotencyApiStrategy strategy, IdempotencyRequestProvider provider) {
         this.strategy = strategy;
+        this.provider = provider;
     }
 
     @Around("@annotation(idempotencyApi)")
@@ -43,21 +45,19 @@ public class IdempotencyApiAspect {
             return joinPoint.proceed();
         }
 
+        IdempotencyRequest preparedRequest = provider.prepare(idempotencyApi);
+        try {
+            IdempotencyKey key = preparedRequest.key();
+            key.isValid(idempotencyApi.keyPatternRegex());
+
+        } catch (JoinProceedException ex) {
+            return joinPoint.proceed();
+
+        }
         String storeType = idempotencyApi.storeType();
 
-        HttpServletRequest request = ((ServletRequestAttributes) RequestContextHolder.currentRequestAttributes()).getRequest();
-
-        String idempotencyKey = getIdempotencyKey(request, idempotencyApi);
-        if (!StringUtils.hasText(idempotencyKey)) {
-            if (idempotencyApi.keyRequired()) {
-                throw new IdempotentException(IdempotentError.BAD_REQUEST);
-            }
-            return joinPoint.proceed();
-        }
-        strategy.isValidKey(idempotencyKey, idempotencyApi.keyPatternRegex());
-
-        String body = getBody(request);
-
+        String idempotencyKey = preparedRequest.key().key();
+        String body = preparedRequest.body();
         Optional<Object> duplicatedRequest = strategy.getResponseDataIfDuplicateRequest(storeType, idempotencyKey, body);
         return duplicatedRequest.orElseGet(
                 () -> {
@@ -86,13 +86,5 @@ public class IdempotencyApiAspect {
             }
             return false;
         });
-    }
-
-    private String getIdempotencyKey(HttpServletRequest request, IdempotencyApi idempotencyApi) {
-        return request.getHeader(idempotencyApi.headerKey());
-    }
-
-    private String getBody(HttpServletRequest request) throws IOException {
-        return StreamUtils.copyToString(request.getInputStream(), StandardCharsets.UTF_8);
     }
 }
