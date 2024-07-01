@@ -9,10 +9,8 @@ import java.lang.annotation.Target;
 @Target(ElementType.METHOD)
 public @interface IdempotencyApi {
 
-	String headerKey() default "idempotent";
-
+	String findKey() default "idempotent";
 	boolean keyRequired() default false;
-
 	String keyPatternRegex() default "";
 	String storeType() default "inMemoryIdempotencyKeyStore";
 }

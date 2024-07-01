@@ -1,7 +1,6 @@
 package com.hcs.idempotencyapi.repository;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.ValueOperations;
@@ -28,34 +27,23 @@ public class RedisIdempotentKeyStore implements IdempotencyKeyStore {
 
 	@Override
 	public void set(String key, Object value) {
-		redisStore.setIfAbsent(key, writeValueAsString(value), 300, TimeUnit.SECONDS);
+
+		try {
+			String s = om.writeValueAsString(value);
+			redisStore.setIfAbsent(key, s, 300, TimeUnit.SECONDS);
+		} catch (JsonProcessingException e) {
+			throw new RuntimeException();
+		}
 	}
 
 	@Override
 	public Object get(String key) {
-		return readValue(redisStore.get(key));
+		return redisStore.getAndDelete(key);
 	}
 
 	@Override
 	public Object remove(String key) {
-		return readValue(redisStore.getAndDelete(key));
-	}
-
-	private Object readValue(String value) {
-		try {
-			return om.readValue(value, new TypeReference<Object>() {
-			});
-		} catch (JsonProcessingException e) {
-			throw new RuntimeException(e);
-		}
-	}
-
-	private String writeValueAsString(Object value) {
-		try {
-			return om.writeValueAsString(value);
-		} catch (JsonProcessingException e) {
-			throw new RuntimeException(e);
-		}
+		return redisStore.getAndDelete(key);
 	}
 
 
