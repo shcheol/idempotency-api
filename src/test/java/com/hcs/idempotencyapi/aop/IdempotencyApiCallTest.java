@@ -65,8 +65,8 @@ class IdempotencyApiCallTest {
 
 		ExtractableResponse<Response> extract = 헤더에멱등키없는요청("required");
 		int i = extract.response().statusCode();
-		assertThat(i).isEqualTo(IdempotentError.BAD_REQUEST.status().value());
-		assertThat(extract.body().asString()).isEqualTo(IdempotentError.BAD_REQUEST.message());
+		assertThat(i).isEqualTo(IdempotentError.NO_KEY.status().value());
+		assertThat(extract.body().asString()).isEqualTo(IdempotentError.NO_KEY.message());
 		verify(testService, times(0)).test(any());
 
 	}
@@ -80,7 +80,6 @@ class IdempotencyApiCallTest {
 
 		assertThat(extract.response().statusCode()).isEqualTo(extract2.response().statusCode());
 		assertThat(extract.response().body().asString()).isEqualTo(extract2.response().body().asString());
-		System.out.println("+++++++++++");
 		verify(testService, times(1)).test("testValue");
 	}
 

@@ -2,6 +2,8 @@ package com.hcs.idempotencyapi.aop.code;
 
 import org.springframework.stereotype.Service;
 
+import java.util.concurrent.TimeUnit;
+
 @Service
 public class TestService {
 
@@ -15,7 +17,7 @@ public class TestService {
 
 	public String delay(String value){
 		try {
-			Thread.sleep(4000);
+			TimeUnit.SECONDS.sleep(4);
 		} catch (InterruptedException e) {
 			throw new RuntimeException(e);
 		}

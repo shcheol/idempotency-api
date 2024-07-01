@@ -12,38 +12,40 @@ import java.util.concurrent.TimeUnit;
 @Component
 public class RedisIdempotentKeyStore implements IdempotencyKeyStore {
 
-    private final ValueOperations<String, String> redisStore;
+	private final ValueOperations<String, String> redisStore;
+	private final ObjectMapper om;
 
-    public RedisIdempotentKeyStore(RedisTemplate<String, String> redisTemplate) {
-        this.redisStore = redisTemplate.opsForValue();
-    }
+	public RedisIdempotentKeyStore(RedisTemplate<String, String> redisTemplate, ObjectMapper om) {
+		this.redisStore = redisTemplate.opsForValue();
+		this.om = om;
+	}
 
-    @Override
-    public boolean has(String key) {
+	@Override
+	public boolean has(String key) {
 
-        return StringUtils.hasText(redisStore.get(key));
-    }
+		return StringUtils.hasText(redisStore.get(key));
+	}
 
-    @Override
-    public void set(String key, Object value) {
-        ObjectMapper om = new ObjectMapper();
-        try {
-            String s = om.writeValueAsString(value);
-            redisStore.setIfAbsent(key, s, 300, TimeUnit.SECONDS);
-        } catch (JsonProcessingException e) {
-            throw new RuntimeException();
-        }
-    }
+	@Override
+	public void set(String key, Object value) {
 
-    @Override
-    public Object get(String key) {
-        return redisStore.getAndDelete(key);
-    }
+		try {
+			String s = om.writeValueAsString(value);
+			redisStore.setIfAbsent(key, s, 300, TimeUnit.SECONDS);
+		} catch (JsonProcessingException e) {
+			throw new RuntimeException();
+		}
+	}
 
-    @Override
-    public void remove(String key) {
-        redisStore.getAndDelete(key);
-    }
+	@Override
+	public Object get(String key) {
+		return redisStore.getAndDelete(key);
+	}
+
+	@Override
+	public void remove(String key) {
+		redisStore.getAndDelete(key);
+	}
 
 
 }

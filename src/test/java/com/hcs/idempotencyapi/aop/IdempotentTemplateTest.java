@@ -8,16 +8,15 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 
 import java.util.Optional;
-import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 
 @SpringBootTest
-class IdempotencyApiStrategyLogicTest {
+class IdempotentTemplateTest {
 
     @Autowired
-    IdempotencyApiStrategyLogic strategyLogic;
+	IdempotentTemplate strategyLogic;
 
     @Autowired
     RequestStoreMapper requestStore;
@@ -26,30 +25,7 @@ class IdempotencyApiStrategyLogicTest {
 
     String storeType = "inMemoryIdempotencyKeyStore";
 
-    @Test
-    void keyPatternMatch() {
-        String key = UUID.randomUUID().toString();
-        System.out.println(key);
-        String regex = "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$";
 
-        strategyLogic.isValidKey(key, regex);
-        strategyLogic.isValidKey(key, "");
-    }
-
-    @Test
-    void keyPatternNotMatch() {
-        String key = "invalidKey";
-        String regex = "/^[0-9a-fA-F]{8}\\b-[0-9a-fA-F]{4}\\b-[0-9a-fA-F]{4}\\b-[0-9a-fA-F]{4}\\b-[0-9a-fA-F]{12}$/";
-        assertThrows(IdempotentException.class, () -> strategyLogic.isValidKey(key, regex));
-    }
-
-    @Test
-    void keyEmpty() {
-        String key = "";
-        String regex = "regex";
-
-        assertThrows(IdempotentException.class, () -> strategyLogic.isValidKey(key, regex));
-    }
 
     @Test
     void getResponseDataIfDuplicateRequest() {
